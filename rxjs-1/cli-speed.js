@@ -5,7 +5,7 @@
  */
 const kuler = require('kuler');
 const { fromEvent, merge } = require('rxjs');
-const { map, filter, timeout, takeUntil } = require('rxjs/operators');
+const { map, filter, takeUntil, throttleTime } = require('rxjs/operators');
 
 /**
  * Internal dependencies
@@ -13,26 +13,19 @@ const { map, filter, timeout, takeUntil } = require('rxjs/operators');
 const { Race, getRace } = require('./race');
 
 
-const maxTimeout = timeout(1000);
 const race = getRace();
 const carName = 'Lightning McQueen';
 const speed$ = getCarSpeed(race, carName);
 
 let subs = speed$.subscribe({
   next: (speed) => {
-    if (isNaN(speed)) return;
-    process.stdout.write(`Speed: ${speed.toFixed(2)}km/h\r`)
+    if (isNaN(speed)) return; // speed is not a number, stop here
+    process.stdout.write(`\rSpeed: ${speed.toFixed(1)} km/h`)
   },
   error: (err) => {
-    // For the moment we are awere about the end with the error emitted by timeout
-    // TODO modify race.js to emit end of data
-    if (err instanceof TimeoutError) {
-      console.log(kuler('==============🚗Racing finished🚙===============', 'red'));
-      return process.exit(1);
-    }
-    console.error('An error Happen reading car speed', err)
+    console.error(kuler(`An error Happen reading car speed: ${err}`, 'red'))
   },
-  complete: () => console.log(kuler('==============🚗Race finished🚙===============', 'green'))
+  complete: () => console.log(kuler('\n==============🚗Race finished🚙===============', 'green'))
 });
 
 // Start the racing
@@ -52,13 +45,14 @@ function getCarSpeed(race, reqCarName) {
     filter(({ carName }) => carName === reqCarName),
     // Filter bad value when time=0 preventing NaN
     filter(({ time }) => time != 0),
+    throttleTime(300),
     // calculate speed
     map(function ({ time, xLocation }) { // time in ms, xlocation in m
       let xlocationKm = xLocation / 1000;
       let timeHour = time / (1000 * 3600);
       return (xlocationKm / timeHour)
     }),
-    // When event emitter end fire we should complete subscriber
+    // When race emit 'end' we should complete subscriber
     takeUntil(endInfo$)
   )
 }
