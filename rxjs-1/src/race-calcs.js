@@ -34,6 +34,10 @@ function getCarSpeed(race, reqCarName) {
   )
 }
 
+/**
+ * 
+ * @param {EventEmitter} race
+ */
 function getLeaderBoard(race) {
   // let speedKingCar$ = getCarSpeed(race, 'The King');
   let speedQueenCar$ = new getCarSpeed(race, 'Lightning McQueen');
