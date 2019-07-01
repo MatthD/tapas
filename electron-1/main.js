@@ -11,12 +11,12 @@ const appInfos = {
   name: app.getName()
 }
 
-ipcMain.on('getAppInfo', (req, info) => {
+ipcMain.on('getAppInfo', (req, info, id) => {
   //Do not have this requested info, just stop here
   if (!appInfos.hasOwnProperty(info)) {
     return req.reply(null);
   }
-  req.reply(info, appInfos[info]);
+  req.reply(`${info}-${id}`, appInfos[info]);
 });
 
 function createWindow() {

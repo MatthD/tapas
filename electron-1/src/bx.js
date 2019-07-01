@@ -1,6 +1,7 @@
 'use strict';
 
 const { ipcRenderer } = require('electron');
+const uuid = require('uuid/v1');
 
 const bx = {
   /**
@@ -9,8 +10,12 @@ const bx = {
    */
   getInfos(info) {
     return new Promise((resolve, reject) => {
-      ipcRenderer.send('getAppInfo', info);
-      ipcRenderer.on(info, (response, result) => {
+      // Uniq ID from timestamp so that main answer to the correct event listener
+      let id = uuid(); 
+      ipcRenderer.send('getAppInfo', info, id);
+      ipcRenderer.on(`${info}-${id}`, function handler(response, result){
+        // We need to remove listener to prevent multiple listener of same type
+        ipcRenderer.removeListener(info, handler);
         // Main has not any info about, just stop here
         if (!result) return reject('Asked a non defined app infos');
         resolve(result);
